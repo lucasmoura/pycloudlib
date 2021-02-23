@@ -1,7 +1,7 @@
 """Tests for pycloudlib.lxd.instance."""
 from unittest import mock
 
-from pycloudlib.lxd.instance import LXDInstance
+from pycloudlib.lxd.instance import LXDInstance, LXDVirtualMachineInstance
 
 
 class TestExecute:
@@ -20,3 +20,25 @@ class TestExecute:
         args, kwargs = m_subp.call_args
         assert "exec" in args[0]
         assert kwargs.get("rcs", mock.sentinel.not_none) is None
+
+
+class TestVirtualMachineExecute:  # pylint: disable=W0212
+    """Tests covering pycloudlib.lxd.instance.LXDVirtualMachineInstance."""
+
+    @mock.patch("pycloudlib.lxd.instance.subp")
+    def test_exec_with_run_command_on_xenial_machine(
+        self,
+        _m_subp,
+        caplog
+    ):
+        """Test exec does not work with xenial vm."""
+        instance = LXDVirtualMachineInstance(
+            None, execute_via_ssh=False, series="xenial")
+
+        instance._run_command(["test"], None)
+        expected_msg = (
+            "The xenial instance does not support executing commads"
+            " with exec."
+        )
+        assert expected_msg in caplog.messages
+        assert _m_subp.call_count == 1
